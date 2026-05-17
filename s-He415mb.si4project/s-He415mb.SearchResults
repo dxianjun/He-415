@@ -1,0 +1,7 @@
+---- WDG_ReloadCounter Matches (6 in 2 files) ----
+common.h (He415mb\Include) line 34 : #define WDG_ReloadCounter std_iwdg_refresh()
+Delay_125us in tim_bsp.c (He415mb\Source) : 		//	WDG_ReloadCounter;
+Delay_125us in tim_bsp.c (He415mb\Source) : 		//	WDG_ReloadCounter;
+Delay_1ms in tim_bsp.c (He415mb\Source) : 	//	WDG_ReloadCounter;
+Delay_1ms in tim_bsp.c (He415mb\Source) : //	WDG_ReloadCounter;
+Delay_1ms in tim_bsp.c (He415mb\Source) : 		WDG_ReloadCounter;
