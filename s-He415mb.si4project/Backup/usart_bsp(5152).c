@@ -1,4 +1,4 @@
-#include <stdio.h>
+﻿#include <stdio.h>
 
 #include "usart_bsp.h"
 #include "tim_bsp.h"
@@ -165,7 +165,6 @@ void UART3_4_IRQHandler(void)
     }
 }
 
-#if 0
 uint8_t g_send_buffer2[8] = {0x01,0x02,0x03,0x04,0x05,0x06,0x07,0x08};
 uint8_t g_send_buffer4[8] = {0x11,0x12,0x13,0x14,0x15,0x16,0x17,0x18};
 
@@ -187,6 +186,3 @@ void uart2_4_test(void)
         while(!std_usart_get_flag(UART4, USART_FLAG_TC));
     }
 }
-#endif
-
-

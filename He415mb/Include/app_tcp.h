@@ -23,6 +23,10 @@ void SendToSub_State(uint8_t uc_state);
 void SendToSub_Spring(uint8_t uc_spring);
 void SendToSub_Speed(uint8_t uc_speed);
 
+void Bt_Send_info(uint8_t uc_info);
+void Bt_Send_Ack(uint8_t ack, uint8_t cmd, uint8_t para);
+void Bt_Setting(void);
+
 #ifdef __cplusplus
 }
 #endif

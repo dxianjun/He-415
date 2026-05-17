@@ -33,6 +33,9 @@ static uint8_t f_Turn_Cont = 0;
 #define WHEEL_PWM_TURN_REV  250
 #define FAN_PWM_ON          500
 #define FAN_PWM_OFF         0
+#define BT_INFO_PWR_OFF     0
+#define BT_INFO_STANDBY     1
+#define BT_INFO_PWR_ON      2
 
 static void wheel_left_forward(void)  { std_gpio_set_pin(GPIOB, GPIO_PIN_11); }
 static void wheel_left_backward(void) { std_gpio_reset_pin(GPIOB, GPIO_PIN_11); }
@@ -45,9 +48,10 @@ static void fan_set_pwm(uint16_t pwm) { std_tim_set_ccx_value(TIM4, TIM_CHANNEL_
 
 void Power_On(void)
 {
-    if (f_Pwr_On) { return; }
+    if (f_Pwr_On && !f_Standby) { return; }
 
     f_Pwr_On = 1;
+    f_Standby = 0;
     f_pre_pwr_off = 0;
     f_bat_pwr_off = 0;
     f_full_pwr_off = 0;
@@ -66,6 +70,7 @@ void Power_On(void)
     SendToSub_Pwr(2);
     Delay_1ms(10);
     SendToSub_Pwr(2);
+    Bt_Send_info(BT_INFO_PWR_ON);
 
     TimOut10mS[TWATR_HAND] = 0;
     printf("power on\r\n");
@@ -74,6 +79,7 @@ void Power_On(void)
 void Power_Off(void)
 {
     f_Pwr_On = 0;
+    f_Standby = 0;
     f_pre_pwr_off = 0;
     f_bat_pwr_off = 0;
     f_full_pwr_off = 0;
@@ -90,8 +96,36 @@ void Power_Off(void)
     SendToSub_Pwr(0);
     Delay_1ms(10);
     SendToSub_Pwr(0);
+    Bt_Send_info(BT_INFO_PWR_OFF);
 
     printf("power off\r\n");
+}
+
+void Enter_Standby(void)
+{
+    if (!f_Pwr_On) { return; }
+
+    f_Standby = 1;
+    f_pre_pwr_off = 0;
+    f_bat_pwr_off = 0;
+    f_full_pwr_off = 0;
+    f_Water_Spring = 0;
+    f_Water_Spring_cnt = 0;
+
+    /* 待机: 停止运动与喷水，但不执行断电 */
+    wheel_set_forward();
+    std_tim_set_ccx_value(TIM4, TIM_CHANNEL_1, 0);
+    std_tim_set_ccx_value(TIM5, TIM_CHANNEL_1, 0);
+    fan_set_pwm(FAN_PWM_OFF);
+
+    SendToSub_Spring(0);
+    Delay_1ms(10);
+    SendToSub_Water(0);
+    Delay_1ms(10);
+    SendToSub_Pwr(1);
+    Bt_Send_info(BT_INFO_STANDBY);
+
+    printf("enter standby\r\n");
 }
 
 void vi_Power_off(uint8_t uc_flg)
@@ -130,7 +164,7 @@ void sys_flg_init(void)
 
 void App_OnMotorCmd(uint8_t dat)
 {
-    if (!f_Pwr_On) { return; }
+    if (!f_Pwr_On || f_Standby) { return; }
 
     if (dat == 0)
     {
