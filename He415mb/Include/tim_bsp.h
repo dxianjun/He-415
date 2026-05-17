@@ -24,52 +24,8 @@ extern "C" {
 /*------------------------------------------includes--------------------------------------------*/
 #include "ciu32l051_std.h"
 
-#include "stdint.h"
-
-
-
-typedef struct {
-    unsigned char  b0 : 1;
-    unsigned char  b1 : 1;
-    unsigned char  b2 : 1;
-    unsigned char  b3 : 1;
-    unsigned char  b4 : 1;
-    unsigned char  b5 : 1;
-    unsigned char  b6 : 1;
-    unsigned char  b7 : 1;
-} bits_t;
-
-typedef union
-{
-    bits_t        bits;
-    unsigned char val;
-} bit_field_t;
-
-typedef struct {
-    unsigned short  b0 : 1;
-    unsigned short  b1 : 1;
-    unsigned short  b2 : 1;
-    unsigned short  b3 : 1;
-    unsigned short  b4 : 1;
-    unsigned short  b5 : 1;
-    unsigned short  b6 : 1;
-    unsigned short  b7 : 1;
-    unsigned short  b8 : 1;
-    unsigned short  b9 : 1;
-    unsigned short  b10 : 1;
-    unsigned short  b11 : 1;
-    unsigned short  b12 : 1;
-    unsigned short  b13 : 1;
-    unsigned short  b14 : 1;
-    unsigned short  b15 : 1;
-} bits16_t;
-
-typedef union
-{
-    bits16_t   bits;
-    unsigned short val;
-} bit16_field_t;
-
+#include <stdint.h>
+#include "common.h"
 
 #define TNORMAL 	0
 
@@ -77,12 +33,14 @@ typedef union
 #define TTCPIN2		2
 #define TTCPIN3		3
 #define TTCPIN4		4
-#define	TTCPHND		5
+//#define	TTCPHND		5
 
-#define MAX1MS		6
+#define MAX1MS		5
 
-#define TTPWM_CH1	1
-#define TTPWM_CH2	2
+#define TTMR_HAND   0
+#define TWATR_HAND  1
+#define TINPUT_HAND 2
+
 #define MAX10MS		3
 
 #define MAX1S		1
@@ -109,6 +67,9 @@ extern volatile bit_field_t TimFlg;
 #define Tim1s_flg 		TimFlg.bits.b3
 #define f_cal_ok		TimFlg.bits.b4
 
+// ”√”⁄÷–∂œ
+extern volatile bit_field_t  vf_sys_flag;
+#define f_req_spring			vf_sys_flag.bits.b0	
 
 void TimFlg_Hand(void);
 void delay_clk(uint32_t nclk);

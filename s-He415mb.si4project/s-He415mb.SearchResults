@@ -1,7 +1,5 @@
----- WDG_ReloadCounter Matches (6 in 2 files) ----
-common.h (He415mb\Include) line 34 : #define WDG_ReloadCounter std_iwdg_refresh()
-Delay_125us in tim_bsp.c (He415mb\Source) : 		//	WDG_ReloadCounter;
-Delay_125us in tim_bsp.c (He415mb\Source) : 		//	WDG_ReloadCounter;
-Delay_1ms in tim_bsp.c (He415mb\Source) : 	//	WDG_ReloadCounter;
-Delay_1ms in tim_bsp.c (He415mb\Source) : //	WDG_ReloadCounter;
-Delay_1ms in tim_bsp.c (He415mb\Source) : 		WDG_ReloadCounter;
+---- f_req_spring Matches (4 in 3 files) ----
+Tmr_Hand in app_service.c (He415mb\Source) : 		if (f_req_spring)
+Tmr_Hand in app_service.c (He415mb\Source) : 			f_req_spring = 0;
+EXTI4_15_IRQHandler in exti_bsp.c (He415mb\Source) :             f_req_spring = 1;
+tim_bsp.h (He415mb\Include) line 72 : #define f_req_spring			vf_sys_flag.bits.b0	

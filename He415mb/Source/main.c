@@ -98,7 +98,7 @@ int main(void)
     while (1)
     {
         TimFlg_Hand();
-        std_iwdg_refresh();
+        WDG_ReloadCounter;
         user_serv();
     }
 }

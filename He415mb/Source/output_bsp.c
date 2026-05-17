@@ -61,14 +61,26 @@ void output_pwr_lock_set(uint8_t active)
 
 void output_left_wheel_dir_set(bsp_wheel_dir_t dir)
 {
-    if (dir == BSP_WHEEL_DIR_FORWARD) { std_gpio_set_pin(GPIOB, GPIO_PIN_11); }
-    else { std_gpio_reset_pin(GPIOB, GPIO_PIN_11); }
+    if (dir == BSP_WHEEL_DIR_FORWARD) 
+		{ 
+		std_gpio_set_pin(GPIOB, GPIO_PIN_11); 
+		}
+    else 
+		{ 
+		std_gpio_reset_pin(GPIOB, GPIO_PIN_11); 
+		}
 }
 
 void output_right_wheel_dir_set(bsp_wheel_dir_t dir)
 {
-    if (dir == BSP_WHEEL_DIR_FORWARD) { std_gpio_reset_pin(GPIOB, GPIO_PIN_13); }
-    else { std_gpio_set_pin(GPIOB, GPIO_PIN_13); }
+    if (dir == BSP_WHEEL_DIR_FORWARD) 
+		{ 
+		std_gpio_reset_pin(GPIOB, GPIO_PIN_13); 
+		}
+    else 
+		{ 
+		std_gpio_set_pin(GPIOB, GPIO_PIN_13); 
+		}
 }
 
 void output_wheel_dir_forward(void)
@@ -95,11 +107,10 @@ void output_wheel_pwm_set(uint16_t left_pwm, uint16_t right_pwm)
     std_tim_set_ccx_value(TIM5, TIM_CHANNEL_1, right_pwm);
 }
 
+// Îü³¾/ÎüË®
 void output_fan_pwm_set(uint16_t pwm)
 {
     std_tim_set_ccx_value(TIM4, TIM_CHANNEL_4, pwm);
 }
-
-
 
 

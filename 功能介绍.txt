@@ -1,6 +1,12 @@
 He-415mb
 ciu32L051
 
+
+
+
 20260517
 	硬件功能验证完成；
 
+	Program Size: Code=14316 RO-data=416 RW-data=140 ZI-data=1372  
+	App部分功能整合完成；
+	He415mb_20260518

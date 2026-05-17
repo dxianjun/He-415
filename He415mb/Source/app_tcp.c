@@ -10,36 +10,6 @@
 static uint8_t uc_Rxdata[64] = {0};
 static uint8_t TCP_SEND_buf[16] = {0};
 
-#define CMD_SET_PWR     0x01
-#define CMD_SET_SPEED   0x02
-#define CMD_SET_WATER   0x03
-#define CMD_SET_STATE   0x04
-#define CMD_SET_SPRING  0x05
-
-#define CMD_SEND_INFO   0x02
-#define CMD_SEND_PWR    0x03
-
-#define BT_KEY_PWR      0x01
-#define BT_KEY_WATER    0x02
-#define BT_KEY_MOT      0x03
-#define BT_KEY_READ_MAC 0x20
-#define BT_SEND_ACK     0x10
-#define BT_SEND_INFO    0x11
-
-#define SET_PWR_OFF     0
-#define SET_PWR_ON      2
-
-#define BT_ACK_OK       0
-#define BT_ACK_ERR      1
-
-#define BT_INFO_PWR_OFF 0
-#define BT_INFO_STANDBY 1
-#define BT_INFO_PWR_ON  2
-#define BT_INFO_WATER_S 3
-#define BT_INFO_WATER_B 4
-
-#define V_PWR_OFF_KEY       1
-#define V_PWR_OFF_WATFULL   3
 
 static uint8_t *mydatacpy(uint8_t* dataDest, const uint8_t* dataScr, uint16_t len)
 {
@@ -160,174 +130,236 @@ static void Bt_Send_ReadMac_Resp(void)
     UART2_Send_Buf(TCP_SEND_buf, 4);
 }
 
+#define HEAD_VALUE_RECV_SUB		0xB5
+#define HEAD_VALUE_RECV_BT		0xB6
+
+void parse_sub(uint8_t *str)
+{
+	uint8_t cmd = str[1];
+	uint8_t dat = str[3];
+	
+	switch(cmd)
+		{
+		default: break;
+
+		case CMD_SEND_ACK:
+			{
+			if (dat == 1)
+				{
+				
+				}
+			
+			}
+			break;
+
+		case CMD_SEND_INFO:
+			{
+			if (dat == SS_WATER_FULL)
+				{
+				if (!f_Water_Full)
+					{
+					// 执行污水满
+					f_Water_Full = 1; 
+					printf("water full \n");
+					vi_Full_warn(V_PWR_OFF_WATFULL);
+					}
+				}
+			}
+			break;
+
+		case CMD_SEND_PWR:
+			{
+			if (dat) 
+				{
+				printf("uart:pwr\n"); 
+				Power_On(); 
+				}
+			else 
+				{
+				printf("uart:pwr off\n"); 
+				vi_Power_off(V_PWR_OFF_KEY); 
+				}
+			}
+			break;
+		}
+}
+
 static void ParseSubCmd(uint8_t *str, uint16_t len)
 {
     uint16_t i;
     uint16_t cnt;
     uint8_t *p;
-
+	
     for (i = 0; i < len; i++)
     {
         p = &str[i];
-        if (*p != 0xB5) { continue; }
+        if (*p != HEAD_VALUE_RECV_SUB) { continue; }
         if (i + 3 >= len) { break; }
 
         cnt = (uint16_t)p[2] + 4;
         if ((i + cnt) > len) { break; }
-
-        if (p[1] == CMD_SEND_INFO)
-        {
-            if (p[3] == SS_WATER_FULL)
-            {
-                printf("water full\r\n");
-                vi_Power_off(V_PWR_OFF_WATFULL);
-            }
-        }
-        else if (p[1] == CMD_SEND_PWR)
-        {
-            if (p[3]) { Power_On(); }
-            else { vi_Power_off(V_PWR_OFF_KEY); }
-        }
+		
+        parse_sub(p);
 
         i = (uint16_t)(i + cnt - 1);
     }
 }
 
+void parse_bt(uint8_t *str)
+{
+	uint8_t cmd = str[1];
+	uint8_t dat = str[3];
+
+#if 1	// 充电时，所有按键都不允许
+    if (input_dc_in_is_active())
+	    {
+        Bt_Send_Ack(BT_ACK_ERR, BT_KEY_PWR, dat);
+        return;
+	    }
+#endif
+
+	switch (cmd)
+		{
+		default: 
+			{
+			Bt_Send_Ack(BT_ACK_ERR, cmd, dat);
+			}
+			break;
+		
+		case BT_KEY_PWR:
+			{
+			#if 0
+			if (input_dc_in_is_active())
+	            {
+	                Bt_Send_Ack(BT_ACK_ERR, BT_KEY_PWR, dat);
+	                continue;
+	            }
+			#endif
+			
+			 // 2~4 都是开机，0和1都是关机
+			if (dat >= 2)
+				{
+				printf("bt:pwr\n");
+				Power_On();
+				}
+			else
+				{
+				printf("bt:pwr off\n");
+				// davidd 20250213, 按键关机改为预关机, 等5秒后, 才能真正关吸水电机并且断电;
+				vi_Power_off(V_PWR_OFF_KEY);
+				}	
+			}
+			break;
+
+		case BT_KEY_WATER:
+			{			
+            if (!f_Pwr_On)
+	            {
+	                Bt_Send_Ack(BT_ACK_ERR, cmd, dat);
+	                break;
+	            }
+			switch (dat)
+				{
+				default: 
+					{
+					Bt_Send_Ack(BT_ACK_ERR, cmd, dat);
+					}
+					break;
+				
+				case WATER_STOP:
+					{
+	                f_Water_Enable = 0;
+	                f_Water_Spring_cnt = 0;
+	                SendToSub_Water(0);
+					Bt_Send_info(BT_INFO_WATER_STOP);
+	            	}
+					break;
+
+				case WATER_SMAL:
+					{
+	                f_Water_Enable = 1;
+	                f_Water_Spring_cnt = 0;
+	                SendToSub_Water(1);
+	                Bt_Send_info(BT_INFO_WATER_SMALL);
+	            	}
+					break;
+				
+				case WATER_BIG:
+					{
+					f_Water_Enable = 1;
+	                f_Water_Spring_cnt = 1;
+	                SendToSub_Spring(2);
+	                Bt_Send_info(BT_INFO_WATER_BIG);
+					}
+					break;
+
+				case WATER_CONT:
+					{
+					f_Water_Spring_cnt = 1;
+	                f_Water_Enable = 1;
+					f_Water_Spring = 1;
+	                SendToSub_Spring(2);
+					}
+					break;
+					
+				case WATER_CONT_REL:
+					{
+					f_Water_Spring_cnt = 0;
+	                f_Water_Enable = 1;
+					f_Water_Spring = 0;
+	                SendToSub_Spring(0);
+					}
+					break;
+				}
+        	}
+			break;
+
+		case BT_KEY_READ_MAC:
+			{
+            Bt_Send_ReadMac_Resp();
+			}
+			break;
+
+		#if (WHEEL_DRIVER_BY_MOTOR)
+		case BT_KEY_MOT:
+			{
+			if (!f_Pwr_On)
+	            {
+	                Bt_Send_Ack(BT_ACK_ERR, cmd, dat);
+	                continue;
+	            }
+			
+            App_OnMotorCmd(dat);
+			}
+			break;
+		#endif
+        
+		}
+
+}
 static void ParseBtCmd(uint8_t *str, uint16_t len)
 {
     uint16_t i;
     uint16_t cnt;
-    uint8_t cmd;
-    uint8_t dat;
-    uint8_t *p;
 
-    for (i = 0; i < len; i++)
+    uint8_t *p;
+		
+	for (i = 0; i < len; i++)
     {
         p = &str[i];
-        if (*p != 0xB6) { continue; }
+        if (*p != HEAD_VALUE_RECV_BT) { continue; }
         if (i + 3 >= len) { break; }
 
         cnt = (uint16_t)p[2] + 4;
         if ((i + cnt) > len) { break; }
 
-        cmd = p[1];
-        dat = p[3];
-
-        if (cmd == BT_KEY_PWR)
-        {
-            if (cnt != 5)
-            {
-                Bt_Send_Ack(BT_ACK_ERR, cmd, dat);
-                i = (uint16_t)(i + cnt - 1);
-                continue;
-            }
-
-            
-            if (input_dc_in_is_active())
-            {
-                Bt_Send_Ack(BT_ACK_ERR, BT_KEY_PWR, dat);
-                i = (uint16_t)(i + cnt - 1);
-                continue;
-            }
-
-            if (dat == 0)
-            {
-                vi_Power_off(V_PWR_OFF_KEY);
-            }
-            else if (dat == 1)
-            {
-                Enter_Standby();
-            }
-            else
-            {
-                Power_On();
-            }
-        }
-        else if (cmd == BT_KEY_WATER)
-        {
-            if (cnt != 5)
-            {
-                Bt_Send_Ack(BT_ACK_ERR, cmd, dat);
-                i = (uint16_t)(i + cnt - 1);
-                continue;
-            }
-
-            if (!f_Pwr_On || f_Standby)
-            {
-                Bt_Send_Ack(BT_ACK_ERR, cmd, dat);
-                i = (uint16_t)(i + cnt - 1);
-                continue;
-            }
-
-            if (dat == 0)
-            {
-                f_Water_Enable = 0;
-                f_Water_Spring_cnt = 0;
-                SendToSub_Water(0);
-                Bt_Send_info(BT_INFO_PWR_ON);
-            }
-            else if (dat == 1)
-            {
-                f_Water_Enable = 1;
-                f_Water_Spring_cnt = 0;
-                SendToSub_Water(1);
-                Bt_Send_info(BT_INFO_WATER_S);
-            }
-            else if (dat == 2)
-            {
-                f_Water_Enable = 1;
-                f_Water_Spring_cnt = 1;
-                SendToSub_Spring(2);
-                Bt_Send_info(BT_INFO_WATER_B);
-            }
-            else if (dat == 3)
-            {
-                f_Water_Spring_cnt = 1;
-                f_Water_Enable = 1;
-                SendToSub_Spring(2);
-                Bt_Send_info(BT_INFO_WATER_B);
-            }
-            else if (dat == 4)
-            {
-                f_Water_Spring_cnt = 0;
-                f_Water_Enable = 1;
-                SendToSub_Spring(0);
-                Bt_Send_info(BT_INFO_PWR_ON);
-            }
-            else
-            {
-                Bt_Send_Ack(BT_ACK_ERR, cmd, dat);
-            }
-        }
-        else if (cmd == BT_KEY_MOT)
-        {
-            if (cnt != 5 || dat > 4 || !f_Pwr_On || f_Standby)
-            {
-                Bt_Send_Ack(BT_ACK_ERR, cmd, dat);
-                i = (uint16_t)(i + cnt - 1);
-                continue;
-            }
-            App_OnMotorCmd(dat);
-        }
-        else if (cmd == BT_KEY_READ_MAC)
-        {
-            if (cnt != 4)
-            {
-                Bt_Send_Ack(BT_ACK_ERR, cmd, 0);
-                i = (uint16_t)(i + cnt - 1);
-                continue;
-            }
-            Bt_Send_ReadMac_Resp();
-        }
-        else
-        {
-            Bt_Send_Ack(BT_ACK_ERR, cmd, dat);
-        }
-
+        parse_bt(p);
         i = (uint16_t)(i + cnt - 1);
     }
 }
 
+
+#if 1
 void tcp_hand(void)
 {
     uint8_t uc_len;
@@ -360,6 +392,6 @@ void tcp_hand(void)
         }
     }
 }
-
+#endif
 
 

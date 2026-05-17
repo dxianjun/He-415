@@ -246,7 +246,7 @@ void tim3_out_init(void)
     
     basic_init_struct.prescaler = TIM_PRESCALER_VALUE;
     basic_init_struct.counter_mode = TIM_COUNTER_MODE_UP;
-    basic_init_struct.period = TIM_PERIOD_VALUE;
+    basic_init_struct.period = TIM_PERIOD_VALUE-1;
     basic_init_struct.clock_div = TIM_CLOCK_DTS_DIV1;
     basic_init_struct.auto_reload_preload = TIM_AUTORELOAD_PRE_DISABLE;
     std_tim_init(TIM3, &basic_init_struct);
@@ -297,7 +297,6 @@ void tim4_out_gpio_init(void)
 {
     std_gpio_init_t tim3_gpio_init = {0};
     
-    
     std_rcc_gpio_clk_enable(RCC_PERIPH_CLK_GPIOA);
         
     /* Hardware PWM mapping:
@@ -331,19 +330,20 @@ void tim4_out_init(void)
     
     basic_init_struct.prescaler = TIM_PRESCALER_VALUE;
     basic_init_struct.counter_mode = TIM_COUNTER_MODE_UP;
-    basic_init_struct.period = TIM_PERIOD_VALUE;
+    basic_init_struct.period = TIM_PERIOD_VALUE-1;
     basic_init_struct.clock_div = TIM_CLOCK_DTS_DIV1;
     basic_init_struct.auto_reload_preload = TIM_AUTORELOAD_PRE_DISABLE;
     std_tim_init(TIM4, &basic_init_struct);
-    
-    
-    oc_config_struct.output_compare_mode = TIM_OUTPUT_MODE_PWM1;
+
+	// 左轮, 低电平速度快
+    oc_config_struct.output_compare_mode = TIM_OUTPUT_MODE_PWM2;
     oc_config_struct.output_pol = TIM_OUTPUT_POL_HIGH;
-    oc_config_struct.pulse = TIM_PULSE1_VALUE;
+    oc_config_struct.pulse = 0;
     std_tim_output_compare_init(TIM4, &oc_config_struct, TIM_CHANNEL_1);
 
-    
-    oc_config_struct.pulse = TIM_PULSE4_VALUE;
+    // 吸水电机
+    oc_config_struct.output_compare_mode = TIM_OUTPUT_MODE_PWM1;
+    oc_config_struct.pulse = 0;	// 50%
     std_tim_output_compare_init(TIM4, &oc_config_struct, TIM_CHANNEL_4);
 }
 
@@ -394,21 +394,20 @@ void tim5_out_init(void)
     std_tim_basic_init_t basic_init_struct = {0};
     std_tim_output_compare_init_t oc_config_struct = {0};
     
-    
     std_rcc_apb1_clk_enable(RCC_PERIPH_CLK_TIM5);
     
     
     basic_init_struct.prescaler = TIM_PRESCALER_VALUE;
     basic_init_struct.counter_mode = TIM_COUNTER_MODE_UP;
-    basic_init_struct.period = TIM_PERIOD_VALUE;
+    basic_init_struct.period = TIM_PERIOD_VALUE-1;
     basic_init_struct.clock_div = TIM_CLOCK_DTS_DIV1;
     basic_init_struct.auto_reload_preload = TIM_AUTORELOAD_PRE_DISABLE;
     std_tim_init(TIM5, &basic_init_struct);
     
-    
-    oc_config_struct.output_compare_mode = TIM_OUTPUT_MODE_PWM1;
+    // 左轮, 低电平速度快, pwm2方式为计数到了，才输出有效电平
+    oc_config_struct.output_compare_mode = TIM_OUTPUT_MODE_PWM2;
     oc_config_struct.output_pol = TIM_OUTPUT_POL_HIGH;
-    oc_config_struct.pulse = TIM_PULSE2_VALUE;
+    oc_config_struct.pulse = 0;
     std_tim_output_compare_init(TIM5, &oc_config_struct, TIM_CHANNEL_1);
 
 }
@@ -419,10 +418,7 @@ void tim5_out_init(void)
 */
 void bsp_tim5_output_start(void)
 {
-    
     std_tim_ccx_channel_enable(TIM5, TIM_CHANNEL_1);
-
-    
     std_tim_enable(TIM5);    
 }
 #endif
@@ -448,18 +444,14 @@ void tim8_init(void)
     tmp_psc_value = (uint32_t)(((SystemCoreClock) / 800000) - 1);
     // comment fixed
     
-    
     basic_init_struct.prescaler = tmp_psc_value;
     basic_init_struct.counter_mode = TIM_COUNTER_MODE_UP;
     basic_init_struct.period = TIM8_ARR_VALUE;
     basic_init_struct.clock_div = TIM_CLOCK_DTS_DIV1;
     basic_init_struct.auto_reload_preload = TIM_AUTORELOAD_PRE_DISABLE;
     std_tim_init(TIM8, &basic_init_struct);    
-
 	 
     std_tim_interrupt_enable(TIM8, TIM_INTERRUPT_UPDATE);
-    
-    
     std_tim_enable(TIM8);
 
 		
@@ -479,8 +471,6 @@ void TIM8_IRQHandler(void)
     if ((std_tim_get_interrupt_enable(TIM8, TIM_INTERRUPT_UPDATE)) && (std_tim_get_flag(TIM8, TIM_FLAG_UPDATE)))
     {
         std_tim_clear_flag(TIM8, TIM_FLAG_UPDATE);
-        
-        
 
 		TimingDelay_Isr();
 		LED1_TOGGLE();
@@ -497,6 +487,7 @@ volatile unsigned short TimCnt0_1mS;
 
 volatile bit_field_t TimFlg;
 
+extern void Turn_Tmo_Hand(void);
 /**
   * @brief              Comment text fixed.
   * @param              parameter
@@ -521,12 +512,57 @@ void TimingDelay_Isr(void)
 		if(TimCnt0_1mS % 80 ==0)
 			{
 			Tim10ms_flg=1;
+
+			Turn_Tmo_Hand();
 			
 			if(TimCnt0_1mS % 8000 == 0)
 				{
 				Tim1s_flg = 1;
 				
 				l_tick_second++;
+
+				#if (WHEEL_DRIVER_BY_MOTOR==1)
+				
+				// 1秒种, 根据频率, 调整速度; davidd 20250306
+				if ((f_Turn_wheel==0)&&(f_Pwr_On))
+					{
+					// 开机并且非转弯时, 根据速度调节轮子的Pwm
+					if (ui_wheel_lh_cnt > WHEEL_FB_FREQ_OVRR)
+						{
+						// 限制最小值为30%
+						if (ui_wheel_l_pwm > 300) ui_wheel_l_pwm--;
+
+						TIM4->CC1 = (uint32_t)ui_wheel_l_pwm;
+						}
+					else if (ui_wheel_lh_cnt < WHEEL_FB_FREQ_LOW)
+						{
+						// 限制最大值为99%
+						if (ui_wheel_l_pwm < 990)  ui_wheel_l_pwm++;
+
+						TIM4->CC1 = (uint32_t)ui_wheel_l_pwm;
+						}
+
+					if (ui_wheel_rh_cnt > WHEEL_FB_FREQ_OVRR)
+						{
+						// 限制最小值为30%
+						if (ui_wheel_r_pwm > 300) ui_wheel_r_pwm--;
+
+						TIM5->CC1 = (uint32_t)ui_wheel_r_pwm;
+						}
+					else if (ui_wheel_rh_cnt < WHEEL_FB_FREQ_LOW)
+						{
+						// 限制最大值为99%
+						if (ui_wheel_r_pwm < 990)  ui_wheel_r_pwm++;
+						
+						TIM5->CC1 = (uint32_t)ui_wheel_r_pwm;
+						}
+					}
+
+				ui_wheel_lh_cnt = 0;
+				ui_wheel_rh_cnt = 0;
+
+				#endif
+
 				
 				if (TimCnt0_1mS >= 40000)
 					{

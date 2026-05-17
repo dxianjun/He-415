@@ -3,8 +3,8 @@
 uint32_t g_exti_gpio_flag = 0;
 volatile uint16_t ui_wheel_lh_cnt = 0;
 volatile uint16_t ui_wheel_rh_cnt = 0;
-volatile uint8_t g_req_spring = 0;
-volatile uint8_t g_wheel_auto_mode = 0;
+
+volatile uint8_t g_wheel_auto_mode = 0;		// 1: auto, 0:manual
 
 #define WHEEL_PULSE_CNT 18
 
@@ -86,13 +86,14 @@ void EXTI4_15_IRQHandler(void)
         std_exti_clear_pending(EXTI_LINE_GPIO_PIN13);
         g_exti_gpio_flag = 1;
     }
-
+	
     /* left wheel manual: PB15; left wheel auto: PB12
        right wheel manual: PD0; right wheel auto: PB14 */
+
+	#if WHEEL_DRIVER_BY_MOTOR
     if (std_exti_get_pending_status(EXTI_LINE_GPIO_PIN15))
     {
         std_exti_clear_pending(EXTI_LINE_GPIO_PIN15);
-        g_exti_gpio_flag = 1;
         if (g_wheel_auto_mode == 0)
         {
             ui_wheel_lh_cnt++;
@@ -102,17 +103,15 @@ void EXTI4_15_IRQHandler(void)
     if (std_exti_get_pending_status(EXTI_LINE_GPIO_PIN0))
     {
         std_exti_clear_pending(EXTI_LINE_GPIO_PIN0);
-        g_exti_gpio_flag = 1;
         if (g_wheel_auto_mode == 0)
         {
             ui_wheel_rh_cnt++;
         }
     }
-
+	#else
     if (std_exti_get_pending_status(EXTI_LINE_GPIO_PIN14))
     {
         std_exti_clear_pending(EXTI_LINE_GPIO_PIN14);
-        g_exti_gpio_flag = 1;
         if (g_wheel_auto_mode != 0)
         {
             ui_wheel_rh_cnt++;
@@ -123,13 +122,13 @@ void EXTI4_15_IRQHandler(void)
     if (std_exti_get_pending_status(EXTI_LINE_GPIO_PIN12))
     {
         std_exti_clear_pending(EXTI_LINE_GPIO_PIN12);
-        g_exti_gpio_flag = 1;
         if (g_wheel_auto_mode != 0)
         {
             ui_wheel_lh_cnt++;
         }
     }
-
+	#endif
+	
     ui_wheel_min = (ui_wheel_lh_cnt < ui_wheel_rh_cnt) ? ui_wheel_lh_cnt : ui_wheel_rh_cnt;
     ui_wheel_max = (ui_wheel_lh_cnt > ui_wheel_rh_cnt) ? ui_wheel_lh_cnt : ui_wheel_rh_cnt;
 
@@ -137,7 +136,7 @@ void EXTI4_15_IRQHandler(void)
     {
         if (ui_wheel_max <= (uint16_t)(ui_wheel_min + 2))
         {
-            g_req_spring = 1;
+            f_req_spring = 1;
         }
         ui_wheel_lh_cnt = 0;
         ui_wheel_rh_cnt = 0;
