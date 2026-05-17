@@ -2,7 +2,7 @@
 /**
 * @file               tim_bsp.h
 * @author             MCU Ecosystem Development Team
-* @brief              TIM BSP头文件
+* @brief              Comment text fixed.
 *                           
 *
 **************************************************************************************************
@@ -13,7 +13,7 @@
 */
 
 
-/* 避免头文件重复引用 */
+
 #ifndef TIM_BSP_H
 #define TIM_BSP_H
 
@@ -27,7 +27,7 @@ extern "C" {
 #include "stdint.h"
 
 
-/********** 位域（位段）类型定义 **********/
+
 typedef struct {
     unsigned char  b0 : 1;
     unsigned char  b1 : 1;
@@ -145,3 +145,5 @@ void tim8_init(void);
 #endif
 
 #endif /* TIM_BSP_H */
+
+

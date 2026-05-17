@@ -1,4 +1,4 @@
-﻿#ifndef COMMON_H
+#ifndef COMMON_H
 #define COMMON_H
 
 #ifdef __cplusplus
@@ -26,3 +26,5 @@ void led_init(void);
 #endif
 
 #endif
+
+

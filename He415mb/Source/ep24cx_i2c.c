@@ -147,3 +147,5 @@ void Init_SysData(void)
     ui_sys_flg = gSysData.m_flg;
     (void)ui_sys_flg;
 }
+
+

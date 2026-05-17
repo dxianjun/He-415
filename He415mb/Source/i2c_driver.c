@@ -1,4 +1,4 @@
-﻿#include "i2c_driver.h"
+#include "i2c_driver.h"
 
 #define EEPROM_WRITE_TIME 1
 #define IIC_READ  0x01
@@ -36,6 +36,11 @@ static void SDA_IO_SET(uint8_t input)
 #define SetOutputAll() SDA_IO_SET(0)
 #define SetInputSDA()  SDA_IO_SET(1)
 #define SetOutputSDA() SDA_IO_SET(0)
+
+void I2c_gpio_init(void)
+{
+
+}
 
 static void I2C_Start(void)
 {
@@ -303,3 +308,5 @@ bool I2C_WriteData(unsigned char Cmd, unsigned char write_data)
     I2C_Stop();
     return ack;
 }
+
+

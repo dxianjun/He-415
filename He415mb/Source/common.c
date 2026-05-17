@@ -1,4 +1,4 @@
-﻿#include "common.h"
+#include "common.h"
 
 void system_clock_config(void)
 {
@@ -22,3 +22,5 @@ void system_clock_config(void)
 
     SystemCoreClockUpdate();
 }
+
+

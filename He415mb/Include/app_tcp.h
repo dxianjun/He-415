@@ -1,4 +1,4 @@
-﻿#ifndef APP_TCP_H
+#ifndef APP_TCP_H
 #define APP_TCP_H
 
 #ifdef __cplusplus
@@ -32,3 +32,5 @@ void Bt_Setting(void);
 #endif
 
 #endif
+
+

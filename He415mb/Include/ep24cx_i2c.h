@@ -1,4 +1,4 @@
-﻿#ifndef EP24CX_I2C_H
+#ifndef EP24CX_I2C_H
 #define EP24CX_I2C_H
 
 #ifdef __cplusplus
@@ -39,3 +39,5 @@ void clr_Custcode(void);
 #endif
 
 #endif
+
+

@@ -121,8 +121,8 @@ typedef struct
 
 /* USART传输模式 */
 #define  USART_DIRECTION_NONE                   (0x00000000U)                         /**< 未使能发送器和接收器          */
-#define  USART_DIRECTION_SEND                   USART_CR1_TE                          /**< 单发送模式(仅使能发送器)      */
-#define  USART_DIRECTION_RECEIVE                USART_CR1_RE                          /**< 单接收模式(仅使能接收器)      */
+#define  USART_DIRECTION_SEND                   USART_CR1_TE                          /**< 单接收模式(仅使能接收器)      */
+#define  USART_DIRECTION_RECEIVE                USART_CR1_RE                          /**< 单发送模式(仅使能发送器)      */
 #define  USART_DIRECTION_SEND_RECEIVE           (USART_CR1_TE |USART_CR1_RE)          /**< 发送/接收(使能发送器和接收器) */
 
 /* USART 时钟控制，用于同步及智能卡模式 */

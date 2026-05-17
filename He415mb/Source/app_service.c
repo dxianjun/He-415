@@ -3,6 +3,8 @@
 #include "app_service.h"
 #include "app_tcp.h"
 #include "exti_bsp.h"
+#include "input_bsp.h"
+#include "output_bsp.h"
 
 bit16_field_t g_app_flag;
 
@@ -37,14 +39,9 @@ static uint8_t f_Turn_Cont = 0;
 #define BT_INFO_STANDBY     1
 #define BT_INFO_PWR_ON      2
 
-static void wheel_left_forward(void)  { std_gpio_set_pin(GPIOB, GPIO_PIN_11); }
-static void wheel_left_backward(void) { std_gpio_reset_pin(GPIOB, GPIO_PIN_11); }
-static void wheel_right_forward(void) { std_gpio_reset_pin(GPIOB, GPIO_PIN_13); }
-static void wheel_right_backward(void){ std_gpio_set_pin(GPIOB, GPIO_PIN_13); }
-static void wheel_set_forward(void)   { wheel_left_forward();  wheel_right_forward(); }
-static void wheel_set_turn_left(void) { wheel_left_backward(); wheel_right_forward(); }
-static void wheel_set_turn_right(void){ wheel_left_forward();  wheel_right_backward(); }
-static void fan_set_pwm(uint16_t pwm) { std_tim_set_ccx_value(TIM4, TIM_CHANNEL_4, pwm); }
+static void wheel_set_forward(void)   { output_wheel_dir_forward(); }
+static void wheel_set_turn_left(void) { output_wheel_dir_turn_left(); }
+static void wheel_set_turn_right(void){ output_wheel_dir_turn_right(); }
 
 void Power_On(void)
 {
@@ -58,14 +55,13 @@ void Power_On(void)
     uc_Bat_Low_cnt = 0;
     uc_PreOff_cnt = 0;
 
-    std_gpio_reset_pin(GPIOB, GPIO_PIN_4);
-    std_gpio_set_pin(GPIOA, GPIO_PIN_10);
-    std_gpio_set_pin(GPIOB, GPIO_PIN_5);
+    output_info_set(0);
+    output_bat_en_set(1);
+    output_pwr_lock_set(1);
 
     wheel_set_forward();
-    std_tim_set_ccx_value(TIM4, TIM_CHANNEL_1, WHEEL_PWM_FWD);
-    std_tim_set_ccx_value(TIM5, TIM_CHANNEL_1, WHEEL_PWM_FWD);
-    fan_set_pwm(FAN_PWM_ON);
+    output_wheel_pwm_set(WHEEL_PWM_FWD, WHEEL_PWM_FWD);
+    output_fan_pwm_set(FAN_PWM_ON);
 
     SendToSub_Pwr(2);
     Delay_1ms(10);
@@ -87,9 +83,9 @@ void Power_Off(void)
     f_Water_Spring = 0;
     f_Water_Spring_cnt = 0;
 
-    std_gpio_reset_pin(GPIOA, GPIO_PIN_10);
-    std_gpio_reset_pin(GPIOB, GPIO_PIN_5);
-    fan_set_pwm(FAN_PWM_OFF);
+    output_bat_en_set(0);
+    output_pwr_lock_set(0);
+    output_fan_pwm_set(FAN_PWM_OFF);
 
     SendToSub_Spring(0);
     Delay_1ms(10);
@@ -112,11 +108,10 @@ void Enter_Standby(void)
     f_Water_Spring = 0;
     f_Water_Spring_cnt = 0;
 
-    /* 待机: 停止运动与喷水，但不执行断电 */
+    
     wheel_set_forward();
-    std_tim_set_ccx_value(TIM4, TIM_CHANNEL_1, 0);
-    std_tim_set_ccx_value(TIM5, TIM_CHANNEL_1, 0);
-    fan_set_pwm(FAN_PWM_OFF);
+    output_wheel_pwm_set(0, 0);
+    output_fan_pwm_set(FAN_PWM_OFF);
 
     SendToSub_Spring(0);
     Delay_1ms(10);
@@ -171,8 +166,7 @@ void App_OnMotorCmd(uint8_t dat)
         f_Turn_Cont = 0;
         f_Turn_wheel = 0;
         wheel_set_forward();
-        std_tim_set_ccx_value(TIM4, TIM_CHANNEL_1, WHEEL_PWM_FWD);
-        std_tim_set_ccx_value(TIM5, TIM_CHANNEL_1, WHEEL_PWM_FWD);
+        output_wheel_pwm_set(WHEEL_PWM_FWD, WHEEL_PWM_FWD);
     }
     else if (dat == 1)
     {
@@ -180,8 +174,7 @@ void App_OnMotorCmd(uint8_t dat)
         f_Turn_wheel = 1;
         ui_turn_try = 0;
         wheel_set_turn_left();
-        std_tim_set_ccx_value(TIM4, TIM_CHANNEL_1, WHEEL_PWM_TURN_FAST);
-        std_tim_set_ccx_value(TIM5, TIM_CHANNEL_1, WHEEL_PWM_TURN_SLOW);
+        output_wheel_pwm_set(WHEEL_PWM_TURN_FAST, WHEEL_PWM_TURN_SLOW);
     }
     else if (dat == 2)
     {
@@ -189,8 +182,7 @@ void App_OnMotorCmd(uint8_t dat)
         f_Turn_wheel = 1;
         ui_turn_try = 0;
         wheel_set_turn_right();
-        std_tim_set_ccx_value(TIM4, TIM_CHANNEL_1, WHEEL_PWM_TURN_SLOW);
-        std_tim_set_ccx_value(TIM5, TIM_CHANNEL_1, WHEEL_PWM_TURN_FAST);
+        output_wheel_pwm_set(WHEEL_PWM_TURN_SLOW, WHEEL_PWM_TURN_FAST);
     }
     else if (dat == 3)
     {
@@ -199,8 +191,7 @@ void App_OnMotorCmd(uint8_t dat)
         ui_turn_try_set = ANGLE_180L;
         ui_turn_try = 0;
         wheel_set_turn_left();
-        std_tim_set_ccx_value(TIM4, TIM_CHANNEL_1, WHEEL_PWM_TURN_FAST);
-        std_tim_set_ccx_value(TIM5, TIM_CHANNEL_1, WHEEL_PWM_TURN_REV);
+        output_wheel_pwm_set(WHEEL_PWM_TURN_FAST, WHEEL_PWM_TURN_REV);
     }
     else if (dat == 4)
     {
@@ -209,8 +200,7 @@ void App_OnMotorCmd(uint8_t dat)
         ui_turn_try_set = ANGLE_180R;
         ui_turn_try = 0;
         wheel_set_turn_right();
-        std_tim_set_ccx_value(TIM4, TIM_CHANNEL_1, WHEEL_PWM_TURN_REV);
-        std_tim_set_ccx_value(TIM5, TIM_CHANNEL_1, WHEEL_PWM_TURN_FAST);
+        output_wheel_pwm_set(WHEEL_PWM_TURN_REV, WHEEL_PWM_TURN_FAST);
     }
 }
 
@@ -223,8 +213,7 @@ static void Turn_Tmo_Hand(void)
         {
             f_Turn_wheel = 0;
             wheel_set_forward();
-            std_tim_set_ccx_value(TIM4, TIM_CHANNEL_1, WHEEL_PWM_FWD);
-            std_tim_set_ccx_value(TIM5, TIM_CHANNEL_1, WHEEL_PWM_FWD);
+            output_wheel_pwm_set(WHEEL_PWM_FWD, WHEEL_PWM_FWD);
         }
     }
 }
@@ -234,7 +223,7 @@ static void Input_Hand(void)
     if (TimOut10mS[TINPUT_HAND] < 5) { return; }
     TimOut10mS[TINPUT_HAND] = 0;
 
-    if (std_gpio_get_input_pin(GPIOA, GPIO_PIN_12))
+    if (input_dc_in_is_active())
     {
         uc_Dc_In_cnt++;
         if (uc_Dc_In_cnt >= 2)
@@ -256,12 +245,12 @@ static void Input_Hand(void)
 
     if (!f_Dc_In)
     {
-        if (!std_gpio_get_input_pin(GPIOA, GPIO_PIN_4))
+        if (input_bat_low_is_active())
         {
             if (uc_Bat_Low_cnt < 201) { uc_Bat_Low_cnt++; }
             if (uc_Bat_Low_cnt == 200)
             {
-                std_gpio_set_pin(GPIOB, GPIO_PIN_4);
+                output_info_set(1);
                 vi_Power_off(V_PWR_OFF_BATLOW);
             }
         }
@@ -270,7 +259,7 @@ static void Input_Hand(void)
             uc_Bat_Low_cnt--;
             if (uc_Bat_Low_cnt == 0)
             {
-                std_gpio_reset_pin(GPIOB, GPIO_PIN_4);
+                output_info_set(0);
             }
         }
     }
@@ -317,7 +306,7 @@ static void Tmr_Hand(void)
     }
 }
 
-void ScheduleHandle(void)
+void user_serv(void)
 {
     Input_Hand();
     tcp_hand();
@@ -325,3 +314,6 @@ void ScheduleHandle(void)
     Turn_Tmo_Hand();
   //  Exit_Hand();
 }
+
+
+

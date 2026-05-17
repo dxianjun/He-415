@@ -1,10 +1,11 @@
-﻿#include <stdio.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "app_tcp.h"
 #include "usart_bsp.h"
 #include "tim_bsp.h"
 #include "app_service.h"
+#include "input_bsp.h"
 
 static uint8_t uc_Rxdata[64] = {0};
 static uint8_t TCP_SEND_buf[16] = {0};
@@ -147,7 +148,7 @@ void Bt_Send_Ack(uint8_t ack, uint8_t cmd, uint8_t para)
 
 void Bt_Setting(void)
 {
-    /* 保留V3接口，后续如需AT配置可在此扩展 */
+    
 }
 
 static void Bt_Send_ReadMac_Resp(void)
@@ -221,8 +222,8 @@ static void ParseBtCmd(uint8_t *str, uint16_t len)
                 continue;
             }
 
-            /* 充电状态下禁止开关机命令，回发ACK */
-            if (std_gpio_get_input_pin(GPIOA, GPIO_PIN_12))
+            
+            if (input_dc_in_is_active())
             {
                 Bt_Send_Ack(BT_ACK_ERR, BT_KEY_PWR, dat);
                 i = (uint16_t)(i + cnt - 1);
@@ -359,3 +360,6 @@ void tcp_hand(void)
         }
     }
 }
+
+
+

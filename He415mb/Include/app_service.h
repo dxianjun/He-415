@@ -1,4 +1,4 @@
-﻿#ifndef APP_SERVICE_H
+#ifndef APP_SERVICE_H
 #define APP_SERVICE_H
 
 #ifdef __cplusplus
@@ -19,7 +19,7 @@ extern bit16_field_t g_app_flag;
 #define f_Standby           g_app_flag.bits.b7
 
 void sys_flg_init(void);
-void ScheduleHandle(void);
+void user_serv(void);
 
 void Power_On(void);
 void Power_Off(void);
@@ -33,3 +33,5 @@ void App_OnMotorCmd(uint8_t dat);
 #endif
 
 #endif
+
+

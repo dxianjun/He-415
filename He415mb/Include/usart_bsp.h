@@ -1,4 +1,4 @@
-﻿#ifndef USART_BSP_H
+#ifndef USART_BSP_H
 #define USART_BSP_H
 
 #ifdef __cplusplus
@@ -37,3 +37,5 @@ void uart2_4_test(void);
 #endif
 
 #endif
+
+

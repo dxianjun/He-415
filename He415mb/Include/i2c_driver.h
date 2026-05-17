@@ -1,4 +1,4 @@
-﻿#ifndef I2C_DRIVER_H
+#ifndef I2C_DRIVER_H
 #define I2C_DRIVER_H
 
 #ifdef __cplusplus
@@ -28,3 +28,5 @@ bool I2C_WriteData(unsigned char Cmd, unsigned char write_data);
 #endif
 
 #endif
+
+

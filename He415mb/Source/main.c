@@ -5,6 +5,8 @@
 #include "usart_bsp.h"
 #include "tim_bsp.h"
 #include "exti_bsp.h"
+#include "input_bsp.h"
+#include "output_bsp.h"
 #include "app_service.h"
 #include "i2c_driver.h"
 #include "ep24cx_i2c.h"
@@ -87,13 +89,18 @@ int main(void)
     iwdg_init();
     sys_flg_init();
 		
-		I2C_Configuration();
+	I2C_Configuration();
     Init_SysData();
 
+	input_gpio_init();
+    output_gpio_init();
+	
     while (1)
     {
         TimFlg_Hand();
         std_iwdg_refresh();
-        ScheduleHandle();
+        user_serv();
     }
 }
+
+

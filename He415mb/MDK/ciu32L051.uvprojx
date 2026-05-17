@@ -463,6 +463,16 @@
               <FilePath>..\Source\exti_bsp.c</FilePath>
             </File>
             <File>
+              <FileName>input_bsp.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Source\input_bsp.c</FilePath>
+            </File>
+            <File>
+              <FileName>output_bsp.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Source\output_bsp.c</FilePath>
+            </File>
+            <File>
               <FileName>app_tcp.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\Source\app_tcp.c</FilePath>
