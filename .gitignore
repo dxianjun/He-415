@@ -1,0 +1,29 @@
+# Build artifacts (Keil)
+He415mb/MDK/Objects/
+He415mb/MDK/Listings/
+*.axf
+*.hex
+*.o
+*.d
+*.crf
+*.dep
+*.map
+*.lst
+*.lnp
+*.htm
+
+# Keil user/session files
+*.uvguix.*
+
+# Source Insight cache/backup/session
+s-He415mb.si4project/cache/
+s-He415mb.si4project/Backup/
+s-He415mb.si4project/*.SearchResults
+s-He415mb.si4project/*.siwork
+s-He415mb.si4project/*.sip_sym
+s-He415mb.si4project/*.sip_xab
+s-He415mb.si4project/*.sip_xad
+s-He415mb.si4project/*.sip_xc
+s-He415mb.si4project/*.sip_xf
+s-He415mb.si4project/*.sip_xm
+s-He415mb.si4project/*.sip_xr

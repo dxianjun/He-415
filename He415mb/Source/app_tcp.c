@@ -44,6 +44,19 @@ static void UART2_Send_Buf(const uint8_t *buf, uint8_t len)
     }
 }
 
+static void UART2_Send_String(const char *str)
+{
+    while (!(std_usart_get_flag(UART2, USART_FLAG_TXE))) {}
+	
+    while((*str)!='\0')
+    {
+        std_usart_tx_write_data(UART2, (uint32_t)*str);
+        while (!std_usart_get_flag(UART2, USART_FLAG_TC)) {}
+		str++;
+    }
+}
+
+
 void SendToSub_Pwr(uint8_t uc_pwr)
 {
     TCP_SEND_buf[0] = 0xA5;
@@ -92,42 +105,6 @@ void SendToSub_Speed(uint8_t uc_speed)
     TCP_SEND_buf[3] = uc_speed;
     TCP_SEND_buf[4] = 0xFF;
     UART4_Send_Buf(TCP_SEND_buf, 5);
-}
-
-void Bt_Send_info(uint8_t uc_info)
-{
-    TCP_SEND_buf[0] = 0xA6;
-    TCP_SEND_buf[1] = BT_SEND_INFO;
-    TCP_SEND_buf[2] = 1;
-    TCP_SEND_buf[3] = uc_info;
-    TCP_SEND_buf[4] = 0xFF;
-    UART2_Send_Buf(TCP_SEND_buf, 5);
-}
-
-void Bt_Send_Ack(uint8_t ack, uint8_t cmd, uint8_t para)
-{
-    TCP_SEND_buf[0] = 0xA6;
-    TCP_SEND_buf[1] = BT_SEND_ACK;
-    TCP_SEND_buf[2] = 3;
-    TCP_SEND_buf[3] = ack;
-    TCP_SEND_buf[4] = cmd;
-    TCP_SEND_buf[5] = para;
-    TCP_SEND_buf[6] = 0xFF;
-    UART2_Send_Buf(TCP_SEND_buf, 7);
-}
-
-void Bt_Setting(void)
-{
-    
-}
-
-static void Bt_Send_ReadMac_Resp(void)
-{
-    TCP_SEND_buf[0] = 0xA6;
-    TCP_SEND_buf[1] = BT_KEY_READ_MAC;
-    TCP_SEND_buf[2] = 0;
-    TCP_SEND_buf[3] = 0xFF;
-    UART2_Send_Buf(TCP_SEND_buf, 4);
 }
 
 #define HEAD_VALUE_RECV_SUB		0xB5
@@ -203,6 +180,40 @@ static void ParseSubCmd(uint8_t *str, uint16_t len)
 
         i = (uint16_t)(i + cnt - 1);
     }
+}
+
+
+void Bt_Send_info(uint8_t uc_info)
+{
+    TCP_SEND_buf[0] = 0xA6;
+    TCP_SEND_buf[1] = BT_SEND_INFO;
+    TCP_SEND_buf[2] = 1;
+    TCP_SEND_buf[3] = uc_info;
+    TCP_SEND_buf[4] = 0xFF;
+    UART2_Send_Buf(TCP_SEND_buf, 5);
+}
+
+void Bt_Send_Ack(uint8_t ack, uint8_t cmd, uint8_t para)
+{
+    TCP_SEND_buf[0] = 0xA6;
+    TCP_SEND_buf[1] = BT_SEND_ACK;
+    TCP_SEND_buf[2] = 3;
+    TCP_SEND_buf[3] = ack;
+    TCP_SEND_buf[4] = cmd;
+    TCP_SEND_buf[5] = para;
+    TCP_SEND_buf[6] = 0xFF;
+    UART2_Send_Buf(TCP_SEND_buf, 7);
+}
+
+const uint8_t cmd_bt_ready[] = "AT\r\n\0";
+uint8_t cmd_bt_pair[] = "AT+FTM=19667F4A76FC\r\n\0";
+const uint8_t cmd_readmac[] = "AT+MAC?\r\n\0";
+
+uint8_t bBtReadMacWaiting=false;
+static void Bt_Send_ReadMac_Resp(void)
+{
+    UART2_Send_String((char *)cmd_readmac);
+	bBtReadMacWaiting = true;
 }
 
 void parse_bt(uint8_t *str)
@@ -346,15 +357,32 @@ static void ParseBtCmd(uint8_t *str, uint16_t len)
 		
 	for (i = 0; i < len; i++)
     {
-        p = &str[i];
-        if (*p != HEAD_VALUE_RECV_BT) { continue; }
-        if (i + 3 >= len) { break; }
+        if (str[i] == HEAD_VALUE_RECV_BT) 
+        	{
+        	p = &str[i];
+	        if (i + 3 >= len) { break; }
 
-        cnt = (uint16_t)p[2] + 4;
-        if ((i + cnt) > len) { break; }
+	        cnt = (uint16_t)p[2] + 4;
+	        if ((i + cnt) > len) { break; }
 
-        parse_bt(p);
-        i = (uint16_t)(i + cnt - 1);
+	        parse_bt(p);
+	        i = (uint16_t)(i + cnt - 1);
+        	}
+		else
+			{
+			if (str[i] == '+')		// 回复的信息都是以+开头，以\r\n\0结尾
+				{
+				if ((str[i] != '+') || (str[i+1] != 'M') || (str[i+2] != 'A') || (str[i+3] != 'C') || (str[i+4] != ':'))
+					{
+					continue;
+					}
+				printf("%s", str);
+				bBtReadMacWaiting = false;
+				
+				cnt = 25;	// "AT+FTM=19667F4A76FC\r\n\0";
+				i = (uint16_t)(i + cnt - 1);
+				}
+			}
     }
 }
 
