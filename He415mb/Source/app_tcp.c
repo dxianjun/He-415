@@ -6,6 +6,7 @@
 #include "tim_bsp.h"
 #include "app_service.h"
 #include "input_bsp.h"
+#include "output_bsp.h"
 
 static uint8_t uc_Rxdata[64] = {0};
 static uint8_t TCP_SEND_buf[16] = {0};
@@ -372,20 +373,31 @@ static void ParseBtCmd(uint8_t *str, uint16_t len)
 			{
 			if (str[i] == '+')		// 回复的信息都是以+开头，以\r\n\0结尾
 				{
+				printf("%s", str);
 				if ((str[i] != '+') || (str[i+1] != 'M') || (str[i+2] != 'A') || (str[i+3] != 'C') || (str[i+4] != ':'))
 					{
 					continue;
 					}
-				printf("%s", str);
+				// printf("%s", str);
+				UART2_Send_String((char *)str);
 				bBtReadMacWaiting = false;
 				
-				cnt = 25;	// "AT+FTM=19667F4A76FC\r\n\0";
+				cnt = 17;	// +MAC:19667F4A76FC		// "AT+FTM=19667F4A76FC\r\n\0";
 				i = (uint16_t)(i + cnt - 1);
 				}
 			}
     }
 }
 
+
+void Bt_Setting(void)
+{
+    /* BT wakeup: falling edge pulse to wake module from standby */
+    output_bt_wakeup_pulse();
+    UART2_Send_String((char *)cmd_bt_ready);
+//    std_delay_ms(20);
+//    UART2_Send_String((char *)cmd_bt_pair);
+}
 
 #if 1
 void tcp_hand(void)
@@ -421,5 +433,11 @@ void tcp_hand(void)
     }
 }
 #endif
+
+
+
+
+
+
 
 

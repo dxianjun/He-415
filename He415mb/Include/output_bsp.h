@@ -17,6 +17,8 @@ void output_gpio_init(void);
 void output_info_set(uint8_t active);
 void output_bat_en_set(uint8_t active);
 void output_pwr_lock_set(uint8_t active);
+void output_bt_wakeup_set(uint8_t level);
+void output_bt_wakeup_pulse(void);
 void output_left_wheel_dir_set(bsp_wheel_dir_t dir);
 void output_right_wheel_dir_set(bsp_wheel_dir_t dir);
 void output_wheel_dir_forward(void);
@@ -30,6 +32,7 @@ void output_fan_pwm_set(uint16_t pwm);
 #endif
 
 #endif
+
 
 
 

@@ -18,13 +18,13 @@ void uart_gpio_init(void)
 
     std_rcc_gpio_clk_enable(RCC_PERIPH_CLK_GPIOA);
     std_rcc_gpio_clk_enable(RCC_PERIPH_CLK_GPIOB);
-
+#if 0	// PA2 ÓÃÓÚÀ¶ÑÀµÄRST½Å
     usart_gpio_init.pin = GPIO_PIN_1 | GPIO_PIN_2;
     usart_gpio_init.mode = GPIO_MODE_ALTERNATE;
     usart_gpio_init.pull = GPIO_PULLUP;
     usart_gpio_init.alternate = GPIO_AF1_USART1;
     std_gpio_init(GPIOA, &usart_gpio_init);
-
+#endif
     usart_gpio_init.pin = GPIO_PIN_6 | GPIO_PIN_7;
     usart_gpio_init.alternate = GPIO_AF1_UART2;
     std_gpio_init(GPIOB, &usart_gpio_init);
@@ -46,7 +46,7 @@ void uart_init(void)
     std_rcc_apb1_clk_enable(RCC_PERIPH_CLK_UART3);
     std_rcc_apb1_clk_enable(RCC_PERIPH_CLK_UART4);
 
-    usart_init.baudrate = 115200;
+    usart_init.baudrate = 9600;
     usart_init.direction = USART_DIRECTION_SEND_RECEIVE;
     usart_init.hardware_flow = USART_FLOWCONTROL_NONE;
     usart_init.parity = USART_PARITY_NONE;

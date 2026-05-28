@@ -94,6 +94,8 @@ int main(void)
 
 	input_gpio_init();
     output_gpio_init();
+
+	Bt_Setting();
 	
     while (1)
     {
